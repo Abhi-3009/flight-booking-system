@@ -42,7 +42,7 @@ graph TD
 
     subgraph TIER3["3. CONCURRENCY & LOGIC ENGINES"]
         SM["Session Manager<br/>(pthread_mutex_t)"]
-        SL["Seat Hold Engine<br/>(120s TTL Lease)"]
+        SL["Seat Hold Engine<br/>(TTL Lease Lock)"]
         BC["Bcrypt Crypto Engine<br/>($2a$10$ Salting)"]
     end
 
@@ -65,7 +65,7 @@ graph TD
 ## 🌟 Key Features
 
 - **Concurrent Multi-Client Server:** Multithreaded client handling (`pthread_create`, `pthread_detach`) paired with `poll()` based non-blocking I/O multiplexing.
-- **Real-Time Seat-Level Locking (Lease with TTL):** Passengers select individual seats (`1A`, `2B`, etc.) on a live visual seat map. Selected seats are temporarily held exclusively for **120 seconds**, preventing race conditions and double bookings.
+- **Real-Time Seat-Level Locking (Lease with TTL):** Passengers select individual seats (`1A`, `2B`, etc.) on a live visual seat map. Selected seats are temporarily held exclusively via an optimistic lease lock with configurable time-to-live (TTL), preventing race conditions and double bookings.
 - **Fault-Tolerant Auto-Release on Disconnect:** If a client crashes or abruptly terminates during checkout, the server catches the disconnect, avoids `SIGPIPE` crashes, immediately frees all active seat holds, and clears the session.
 - **Bcrypt Salted Password Hashing:** Replaces plaintext credential storage with self-contained **EksBlowfish Bcrypt** password hashing, generating unique 128-bit random salts per user with constant-time verification.
 - **POSIX `fcntl` Concurrency Control:** Flat-file database transactions are protected with file locking and thread mutexes, guaranteeing ACID-like consistency without race conditions.
@@ -75,21 +75,12 @@ graph TD
 
 ## 👥 Role-Based Access Control (RBAC)
 
-| Feature / Permission | 🛫 Passenger | 👔 Agent | 📊 Manager | 🛡️ Admin |
-| :--- | :---: | :---: | :---: | :---: |
-| **View Flight Schedules & Seat Availability** | ✅ | ✅ | ✅ | ✅ |
-| **View Live Terminal Visual Seat Map** | ✅ | ✅ | — | ✅ |
-| **Reserve & Lock Seats (120s Hold Lease)** | ✅ | — | — | — |
-| **Book & Cancel Tickets (Auto Seat Refund)** | ✅ | — | — | — |
-| **Submit Customer Feedback** | ✅ | — | — | — |
-| **Add New Passengers (Unique Check)** | — | ✅ | — | — |
-| **Modify Passenger Details** | — | ✅ | — | ✅ |
-| **View Passenger Booking History** | My Bookings | All Pax | All Bookings | All Bookings |
-| **Toggle Passenger Account Active State** | — | — | ✅ | — |
-| **Review Customer Feedback Log** | — | — | ✅ | — |
-| **Add Flight Routes & Initialize Seat Map** | — | — | — | ✅ |
-| **Add / Manage Agents & System Oversight** | — | — | — | ✅ |
-| **Change Account Password (Bcrypt Hashed)** | ✅ | ✅ | ✅ | ✅ |
+| Role | Primary Responsibilities & Key Permissions |
+| :--- | :--- |
+| **🛫 Passenger** | Browse flights & seat maps, reserve & lock seats (TTL lease), book/cancel tickets, submit feedback |
+| **👔 Agent** | Create passenger profiles with uniqueness checks, modify passenger details, view booking logs |
+| **📊 Manager** | Activate/deactivate passenger accounts, view comprehensive bookings, review customer feedback |
+| **🛡️ Admin** | Create flight routes & initialize seat matrices, add/manage agents, full system oversight |
 
 ---
 
@@ -107,7 +98,7 @@ When a passenger initiates a booking, the server renders a terminal visual seat 
 [4A:FREE]  [4B:FREE]      [4C:FREE]  [4D:FREE]  
 [5A:FREE]  [5B:FREE]      [5C:FREE]  [5D:FREE]  
 ---------------------------------------------------------------
-Legend: [FREE] = Available | [HELD] = Reserved (2 min) | [TAKEN] = Booked
+Legend: [FREE] = Available | [HELD] = Reserved (Hold Active) | [TAKEN] = Booked
 ===============================================================
 ```
 
@@ -116,11 +107,11 @@ Legend: [FREE] = Available | [HELD] = Reserved (2 min) | [TAKEN] = Booked
 flowchart TD
     INIT([Start]) --> S1["🟢 AVAILABLE<br/>(Seat is open for booking)"]
     
-    S1 -->|"1. Passenger reserves seat"| S2["🟡 HELD<br/>(Exclusive 120s Hold Lease)"]
+    S1 -->|"1. Passenger reserves seat"| S2["🟡 HELD<br/>(Exclusive Hold Lease)"]
     
     S2 -->|"2a. Confirms Booking ('Y')"| S3["🔴 BOOKED<br/>(Ticket Confirmed)"]
     
-    S2 -->|"2b. Cancel ('N') / Timeout (120s) / Disconnect"| S1
+    S2 -->|"2b. Cancel ('N') / Lease Expired / Disconnect"| S1
     
     S3 -->|"3. Passenger Cancels Ticket"| S1
 ```
@@ -229,7 +220,7 @@ make test
 ├── common.h                # Core structs, constants, and role definitions
 ├── auth.c / auth.h         # Bcrypt authentication and session registration
 ├── session_manager.c / .h  # Thread-safe session tracking (duplicate login prevention)
-├── seat_manager.c / .h     # Real-time seat map & temporary hold engine (120s TTL)
+├── seat_manager.c / .h     # Real-time seat map & temporary hold engine (TTL lease)
 ├── bcrypt.c / bcrypt.h     # Standalone EksBlowfish bcrypt cryptographic engine
 ├── init_db.c               # Database initialization and bcrypt seed generator
 ├── customer.c / .h         # Passenger workflows (seat selection, booking, cancel)
