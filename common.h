@@ -10,32 +10,33 @@
 typedef struct {
     int id;
     char username[50];
-    char password[50];
+    char password[70];
     int active;
 } Customer;
 
 typedef struct {
     int id;
     char username[50];
-    char password[50];
+    char password[70];
 } Employee;
 
 typedef struct {
     int id;
     char username[50];
-    char password[50];
+    char password[70];
 } Manager;
 
 typedef struct {
     int id;
     char username[50];
-    char password[50];
+    char password[70];
 } Admin;
 
 typedef struct {
     int booking_id;
     int customer_id;
     int flight_id;
+    char seat_number[10];
     int seats_booked;
     char status[20];
     char timestamp[50];
