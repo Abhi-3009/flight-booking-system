@@ -1,12 +1,12 @@
 # ✈️ Flight Booking Management System
 
-[![Language: C11](https://img.shields.io/badge/Language-C11-00599C?logo=c&logoColor=white)](https://en.wikipedia.org/wiki/C11_(C_standard_revision))
+[![Language: C](https://img.shields.io/badge/Language-C-00599C?logo=c&logoColor=white)](https://en.wikipedia.org/wiki/C_(programming_language))
 [![Platform: POSIX](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux-FF6F00?logo=linux&logoColor=white)](https://pubs.opengroup.org/onlinepubs/9699919799/)
 [![Networking: BSD Sockets](https://img.shields.io/badge/Networking-TCP%2FIP%20Sockets-4B8BBE)](https://en.wikipedia.org/wiki/Berkeley_sockets)
 [![Concurrency: Pthreads](https://img.shields.io/badge/Concurrency-POSIX%20Threads-brightgreen)](https://en.wikipedia.org/wiki/Pthreads)
 [![Security: Bcrypt](https://img.shields.io/badge/Security-Bcrypt%20Salted%20Hashing-critical)](https://en.wikipedia.org/wiki/Bcrypt)
 
-A high-performance, multi-tiered **Flight Booking Management System** built in **C (C11)** using **BSD TCP Sockets**, **POSIX Threads (`pthreads`)**, and **`poll()` I/O Multiplexing**. 
+A high-performance, multi-tiered **Flight Booking Management System** built in **C** using **BSD TCP Sockets**, **POSIX Threads (`pthreads`)**, and **`poll()` I/O Multiplexing**. 
 
 The system features an industry-standard **Real-Time Seat-Level Locking & Reservation Engine with Time-To-Live (TTL) Leases**, transactional flat-file storage with **POSIX `fcntl` advisory locks**, and **Bcrypt one-way salted password hashing** ($2a$10$).
 
@@ -138,7 +138,7 @@ id,username,password,active
 ## 🚀 Installation & Quick Start
 
 ### Prerequisites
-- **Compiler:** GCC or Clang (C11 support)
+- **Compiler:** GCC or Clang
 - **Build Tool:** Make
 - **Environment:** POSIX-compliant OS (macOS, Linux, BSD)
 - **Testing:** Python 3 (for automated test suites)
@@ -232,3 +232,13 @@ make test
 ├── test_all_roles.py       # Role management & RBAC test suite
 └── data/                   # Flat-file databases (flights, seats, bookings, users)
 ```
+
+---
+
+<div align="center">
+
+Made with ❤️ by **[Abhijeet Rai](https://github.com/Abhi-3009)**
+
+⭐ *Star this repository if you found it useful!*
+
+</div>
