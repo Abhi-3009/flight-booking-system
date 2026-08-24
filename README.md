@@ -21,7 +21,6 @@ The system features an industry-standard **Real-Time Seat-Level Locking & Reserv
 - [Cryptographic Security (Bcrypt)](#-cryptographic-security-bcrypt)
 - [Installation & Quick Start](#-installation--quick-start)
 - [Automated Testing Suite](#-automated-testing-suite)
-- [Engineering & Design Decisions](#-engineering--design-decisions)
 - [Project Directory Structure](#-project-directory-structure)
 
 ---
@@ -29,47 +28,36 @@ The system features an industry-standard **Real-Time Seat-Level Locking & Reserv
 ## 🏛 System Architecture
 
 ```mermaid
-flowchart TD
-    subgraph Clients["Concurrent Client Instances (poll() I/O)"]
-        C1["Client 1 (Passenger)"]
-        C2["Client 2 (Passenger)"]
-        C3["Client 3 (Agent / Admin)"]
+graph TD
+    subgraph TIER1["1. CLIENT TIER (poll() Non-Blocking I/O)"]
+        C1["Passenger Client"]
+        C2["Agent Client"]
+        C3["Admin / Manager Client"]
     end
 
-    subgraph Server["Multi-Threaded TCP Server (Port 9091)"]
-        S_SOCK["Listening Socket (SO_REUSEADDR)"]
-        T1["Worker Thread 1"]
-        T2["Worker Thread 2"]
-        T3["Worker Thread 3"]
-        
-        SM["Session Manager (pthread_mutex_t)"]
-        SL["Seat Hold Engine (120s TTL Lease)"]
-        BC["Bcrypt Cryptographic Engine ($2a$10$)"]
+    subgraph TIER2["2. TCP NETWORKING TIER"]
+        SOCK["Server Master Socket (Port 9091)"]
+        TP["Worker Thread Pool (POSIX Threads)"]
     end
 
-    subgraph Database["Relational Flat-File Storage (POSIX fcntl Locks)"]
-        F1[("flights.csv")]
-        F2[("seats.csv")]
-        F3[("bookings.csv")]
-        F4[("customers.csv")]
-        F5[("employees.csv / managers.csv / admins.csv")]
+    subgraph TIER3["3. CONCURRENCY & LOGIC ENGINES"]
+        SM["Session Manager<br/>(pthread_mutex_t)"]
+        SL["Seat Hold Engine<br/>(120s TTL Lease)"]
+        BC["Bcrypt Crypto Engine<br/>($2a$10$ Salting)"]
     end
 
-    C1 <-->|TCP / BSD Socket| S_SOCK
-    C2 <-->|TCP / BSD Socket| S_SOCK
-    C3 <-->|TCP / BSD Socket| S_SOCK
+    subgraph TIER4["4. PERSISTENT STORAGE (POSIX fcntl File Locks)"]
+        D1[("flights.csv & seats.csv")]
+        D2[("bookings.csv")]
+        D3[("user credentials (*.csv)")]
+    end
 
-    S_SOCK --> T1
-    S_SOCK --> T2
-    S_SOCK --> T3
-
-    T1 <--> SM
-    T2 <--> SL
-    T3 <--> BC
-
-    T1 <-->|fcntl F_WRLCK| Database
-    T2 <-->|fcntl F_WRLCK| Database
-    T3 <-->|fcntl F_WRLCK| Database
+    C1 & C2 & C3 -->|"TCP Sockets"| SOCK
+    SOCK -->|"pthread_create()"| TP
+    TP <--> SM
+    TP <--> SL
+    TP <--> BC
+    TP <-->|"fcntl(F_WRLCK)"| D1 & D2 & D3
 ```
 
 ---
@@ -125,14 +113,16 @@ Legend: [FREE] = Available | [HELD] = Reserved (2 min) | [TAKEN] = Booked
 
 ### Seat State Machine:
 ```mermaid
-stateDiagram-v2
-    [*] --> AVAILABLE : Initial State
-    AVAILABLE --> HELD : Passenger selects seat (120s Hold Lease Acquired)
-    HELD --> BOOKED : Passenger confirms booking ('Y')
-    HELD --> AVAILABLE : Passenger cancels ('N')
-    HELD --> AVAILABLE : 120s Hold Timer expires
-    HELD --> AVAILABLE : Passenger disconnects / closes client
-    BOOKED --> AVAILABLE : Passenger cancels confirmed ticket
+flowchart TD
+    INIT([Start]) --> S1["🟢 AVAILABLE<br/>(Seat is open for booking)"]
+    
+    S1 -->|"1. Passenger reserves seat"| S2["🟡 HELD<br/>(Exclusive 120s Hold Lease)"]
+    
+    S2 -->|"2a. Confirms Booking ('Y')"| S3["🔴 BOOKED<br/>(Ticket Confirmed)"]
+    
+    S2 -->|"2b. Cancel ('N') / Timeout (120s) / Disconnect"| S1
+    
+    S3 -->|"3. Passenger Cancels Ticket"| S1
 ```
 
 ---
@@ -229,19 +219,6 @@ make test
 
 ---
 
-## 💡 Engineering & Design Decisions
-
-### 1. Why Lease/TTL Locks instead of blocking OS file locks for the 2-minute booking window?
-> If an OS-level file lock (`fcntl`) were held for 2 minutes while a user decided on a seat, the entire database file would be locked, freezing the server and preventing all other users from browsing or booking different seats. Instead, the system uses an in-memory **Optimistic Record Hold Lease with a 120s TTL** protected by a microsecond mutex, reserving file locks strictly for millisecond disk writes.
-
-### 2. Why `bcrypt` over plain SHA-256 or MD5?
-> General hash functions like SHA-256 are designed for raw speed (e.g., checksumming gigabytes of data). Modern GPUs can compute over 10 billion SHA-256 hashes per second, making dictionary attacks trivial. `bcrypt` incorporates **adaptive key stretching** ($2^{10}$ iterations) and **per-user 128-bit salting**, making brute-force attacks computationally infeasible and immune to Rainbow Table lookups.
-
-### 3. Why `signal(SIGPIPE, SIG_IGN)` and Socket Cleanup Hooks?
-> In socket network programming, writing to a closed socket triggers a `SIGPIPE` signal which terminates the server process by default. By ignoring `SIGPIPE` and handling socket `EOF` gracefully in worker threads, the server ensures 100% uptime even during abrupt network disconnects.
-
----
-
 ## 📁 Project Directory Structure
 
 ```text
@@ -264,9 +241,3 @@ make test
 ├── test_all_roles.py       # Role management & RBAC test suite
 └── data/                   # Flat-file databases (flights, seats, bookings, users)
 ```
-
----
-
-## 📄 License
-
-This project is open-source and available under the [MIT License](LICENSE).
