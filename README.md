@@ -1,73 +1,80 @@
-# Flight Booking System
+# Flight Booking Management System
 
-A robust, multi-role Flight Booking Management System built in C using a Client-Server TCP socket architecture. The system uses raw file-based databases (`.csv`) with explicit file-locking mechanisms to ensure data integrity during concurrent connections.
-
-## Features
-
-- **Concurrent Client-Server Architecture:** Handles multiple simultaneous users via multithreaded socket programming and `poll()` based I/O multiplexing.
-- **Robust Data Integrity:** Implements rigorous POSIX `fcntl` file-locking to prevent race conditions when multiple users book flights concurrently.
-- **Role-Based Access Control (RBAC):** Distinct dashboards and permissions for Passengers, Agents, Managers, and System Admins.
-- **Custom Session Management:** Secure login handling and session tracking for all active users.
+A high-concurrency, multi-role Flight Booking Management System built in C using a Client-Server TCP socket architecture. The system features raw file-based databases (`.csv`) with POSIX `fcntl` file locking and an industry-standard **Real-Time Seat-Level Locking & Reservation Engine with TTL (Temporary Holds)**.
 
 ---
 
-## User Roles & Capabilities
+## 🌟 Key Features
+
+- **Concurrent Client-Server Networking:** Handles multiple simultaneous connections via multithreaded socket programming (`pthread`) and `poll()` based non-blocking I/O multiplexing.
+- **Seat-Level Locking with Temporary Holds (TTL):** Passengers select specific seats (e.g. `1A`, `2B`) via a live visual seat map. The chosen seat is locked with a 120-second countdown, preventing race conditions and double bookings.
+- **Auto-Release on Disconnect:** If a passenger drops connection or cancels checkout, any held seats and sessions are immediately released for other passengers.
+- **Robust POSIX `fcntl` File Locking:** Multi-user data protection across flights, bookings, and customer databases.
+- **Role-Based Access Control (RBAC):** Distinct dashboards and capabilities for Passengers, Agents, Managers, and Admins.
+- **Duplicate Login & Deactivation Handling:** Prevents concurrent duplicate logins and enforces real-time account activation states.
+
+---
+
+## 👥 User Roles & Capabilities
 
 ### 🛫 Passenger (Customer)
-- View available flights and real-time seat availability.
-- Book flight tickets securely.
-- Cancel existing bookings (automatically updates available seats).
+- View available flights and interactive, real-time terminal seat maps.
+- Lock and book specific flight seats securely with live hold timers.
+- Cancel existing bookings (automatically releases seats back to the pool).
 - Submit feedback.
-- Manage profile (change password).
+- Change password.
 
 ### 👔 Agent (Employee)
-- Add new passengers.
+- Add new passengers (with duplicate username prevention).
 - Modify passenger details.
-- View assigned tasks and passenger queries.
+- View all flight schedules and passenger booking records.
+- Change password.
 
 ### 📊 Manager
 - Activate or deactivate passenger accounts.
-- View and review passenger feedback.
-- Oversee agent activities.
+- View and review passenger feedback records.
+- View all system-wide booking transactions.
+- Change password.
 
 ### 🛡️ System Admin
-- Full system control.
-- Add, modify, or remove Employees and Managers.
-- Manage flight routes and global passenger data.
+- Full system oversight.
+- Add new flight routes (automatically generates seat layout matrix).
+- Add new agents with uniqueness validation.
+- Modify passenger and agent records.
+- Change password.
 
 ---
 
-## Installation & Setup
+## 🛠️ Installation & Setup
 
 ### Prerequisites
-- GCC Compiler
+- GCC Compiler (C11 standard support)
 - Make
-- Unix/Linux/macOS environment (POSIX compliant)
+- POSIX-compliant OS (macOS, Linux, BSD)
+- Python 3 (for automated test suite)
 
 ### Build Instructions
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Abhi-3009/flight-booking-system.git
-   cd flight-booking-system
-   ```
-
-2. **Initialize Database**
-   This sets up the `data/` directory with mock flights and user accounts.
+1. **Initialize Database:**
    ```bash
    make setup
    ```
 
-3. **Compile the Code**
+2. **Compile Binaries:**
    ```bash
    make all
    ```
 
+3. **Run Automated Test Suite:**
+   ```bash
+   make test
+   ```
+
 ---
 
-## Usage
+## 🚀 Usage
 
-You need to run the **Server** and **Client** in two separate terminal windows.
+Run the **Server** and **Client** in separate terminal windows:
 
 **Terminal 1 (Server):**
 ```bash
@@ -81,8 +88,6 @@ You need to run the **Server** and **Client** in two separate terminal windows.
 
 ### Default Test Credentials
 
-Upon launching the client, you can log in using any of the default mock accounts:
-
 | Role | Username | Password |
 | :--- | :--- | :--- |
 | **Passenger** | `customer1` | `pass123` |
@@ -92,25 +97,22 @@ Upon launching the client, you can log in using any of the default mock accounts
 
 ---
 
-## Technical Stack
-
-- **Language:** C (C11 standard)
-- **Networking:** BSD Sockets (TCP/IP)
-- **Concurrency:** Pthreads & `poll()`
-- **Storage:** CSV flat files with `fcntl` advisory locks.
-
-## Project Structure
+## 📁 Project Structure
 
 ```text
-├── Makefile                # Build scripts and setup commands
-├── server.c                # Main server entry point & threading
-├── client.c                # Main client entry point & polling
-├── auth.c / auth.h         # Authentication and parsing logic
-├── session_manager.c       # Active session tracking
-├── customer.c              # Passenger logic (booking, viewing flights)
-├── employee.c              # Agent logic (managing passengers)
-├── manager.c               # Manager logic (approvals, feedback)
-├── admin.c                 # Admin logic (system oversight)
+├── Makefile                # Build scripts, test runners, and setup commands
+├── server.c                # Multi-threaded server entry point
+├── client.c                # Client entry point with poll() I/O
+├── common.h                # Core structures and role constants
+├── auth.c / auth.h         # Authentication and RBAC validation
+├── session_manager.c/.h    # Thread-safe session tracking
+├── seat_manager.c/.h       # Real-time seat map & temporary hold engine (TTL)
+├── customer.c / .h         # Passenger workflows (seat selection, booking)
+├── employee.c / .h         # Agent workflows (passenger management)
+├── manager.c / .h          # Manager workflows (approvals, feedback)
+├── admin.c / .h            # Admin workflows (flight creation, oversight)
 ├── utils.c / utils.h       # Shared utilities (string trimming, file locking)
-└── data/                   # Generated database CSV files
+├── test_system.py          # End-to-end automated seat-locking test suite
+├── test_all_roles.py       # RBAC and role management test suite
+└── data/                   # Database CSV files (flights, seats, bookings, users)
 ```
