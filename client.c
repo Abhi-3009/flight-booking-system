@@ -47,8 +47,13 @@ int main() {
       if (fds[1].revents & POLLIN) {
         if (!fgets(input, BUFFER_SIZE, stdin))
           break;
-        input[strcspn(input, "\n")] = 0;
-        if (write(sock, input, strlen(input)) <= 0)
+        int len = strlen(input);
+        if (len == 0) {
+          input[0] = '\n';
+          input[1] = '\0';
+          len = 1;
+        }
+        if (write(sock, input, len) <= 0)
           break;
       }
     }

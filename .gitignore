@@ -1,7 +1,10 @@
 # Binaries
 server
 client
+init_db
+test_bcrypt
 *.o
+*.tmp
 
 # macOS
 .DS_Store

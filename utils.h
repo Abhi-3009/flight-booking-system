@@ -9,5 +9,6 @@ int unlock_file(int fd);
 void trim_string(char *str);
 int is_numeric(const char *str);
 int is_alpha(const char *str);
+int is_username_unique(const char *csv_path, const char *username);
 
 #endif

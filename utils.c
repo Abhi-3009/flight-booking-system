@@ -11,10 +11,12 @@ void send_message(int sock, const char *msg) {
 }
 
 int read_input(int sock, char *buffer, int size) {
+    if (size <= 0) return 0;
     memset(buffer, 0, size);
-    int n = read(sock, buffer, size);
+    int n = read(sock, buffer, size - 1);
     if (n > 0) {
-        buffer[strcspn(buffer, "\n")] = 0;
+        buffer[strcspn(buffer, "\r\n")] = 0;
+        trim_string(buffer);
         return 1;
     }
     return 0;
@@ -99,3 +101,28 @@ int is_alpha(const char *str) {
     }
     return 1;
 }
+
+int is_username_unique(const char *csv_path, const char *username) {
+    FILE *fp = fopen(csv_path, "r");
+    if (!fp) return 1;
+
+    char line[256];
+    fgets(line, sizeof(line), fp); // Header
+
+    while (fgets(line, sizeof(line), fp)) {
+        int id;
+        char user[50];
+        trim_string(line);
+        if (sscanf(line, "%d,%49[^,]", &id, user) == 2) {
+            trim_string(user);
+            if (strcmp(user, username) == 0) {
+                fclose(fp);
+                return 0; // Not unique
+            }
+        }
+    }
+
+    fclose(fp);
+    return 1;
+}
+
