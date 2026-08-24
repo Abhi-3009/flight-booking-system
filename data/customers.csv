@@ -1,5 +1,5 @@
 id,username,password,active
-1,customer1,$2a$10$G2hEH6ICgyqQbzrcH0yFtujYYFwgEd9dK/QsLD2QAvqgGBm8snmg6,1
-2,customer2,$2a$10$G2hEH6ICgyqQbzrcH0yFtujYYFwgEd9dK/QsLD2QAvqgGBm8snmg6,1
-3,alice,$2a$10$XufQn1hnlsCceBj4wNgxtudofUsrFXdyYfIEwDEhgRYXV0TX3Xc8i,1
-4,bob,$2a$10$FJc91llFo/NjoIIVmlMVpeAhMW250A0pr2Nc5e3gIxAXQKomRcJvm,1
+1,customer1,$2a$10$nJ6Mh1QoYvLGdOYEP63Q/.kiNL2c3fLzBteAFo.Ass9nR9knSReR6,1
+2,customer2,$2a$10$nJ6Mh1QoYvLGdOYEP63Q/.kiNL2c3fLzBteAFo.Ass9nR9knSReR6,1
+3,alice,$2a$10$QPAJ1ECg3bLBcrGehfWND.Vo0QGqSWBjYDA1Q1JMSFs.wLNVj99hu,1
+4,bob,$2a$10$R.gGq6f.PI93A2tNmPXwxe/Z3lzpOuDuYvDa4qu3xHtmsRvLlAK7W,1
